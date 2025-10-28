@@ -1,0 +1,227 @@
+﻿@page "/"
+@using AutomathetionService.Services
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+@rendermode InteractiveServer
+<link href="css/general.css" rel="stylesheet" />
+
+<!-- Верхняя панель навигации -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-brand">REIGN</div>
+    </div>
+</nav>
+
+@if (isInitialized)
+{
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <p>@(isLoginMode ? "Вход в аккаунт" : "Создание аккаунта")</p>
+            </div>
+
+            <div class="auth-body">
+                <div class="form-group">
+                    <input type="email" class="form-input" @bind="email" placeholder="Введите email" />
+                </div>
+                <div class="form-group">
+                    <input type="password" class="form-input" @bind="password" placeholder="Введите пароль" />
+                </div>
+                @if (!isLoginMode)
+                {
+                    <div class="form-group">
+                        <input type="password" class="form-input" @bind="confirmPassword" placeholder="Подтвердите пароль" />
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-input" @bind="name" placeholder="Введите имя (необязательно)" />
+                    </div>
+                }
+
+                <button class="auth-btn" @onclick="HandleAuth">
+                    @(isLoginMode ? "Войти" : "Зарегистрироваться")
+                </button>
+
+                <div class="auth-links">
+                    @if (isLoginMode)
+                    {
+                        <span>Нет аккаунта? <a href="#" @onclick="ToggleMode" class="auth-link">Регистрация</a></span>
+                        <a href="#" @onclick="ShowForgotPassword" class="auth-link">Не могу войти</a>
+                    }
+                    else
+                    {
+                        <span>Уже есть аккаунт? <a href="#" @onclick="ToggleMode" class="auth-link">Войти</a></span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <p>Загрузка...</p>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoginMode = true;
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private string confirmPassword = string.Empty;
+    private string name = string.Empty;
+    private bool isRedirecting = false;
+    private bool isInitialized = false; // Добавляем флаг инициализации
+
+    // Вместо OnInitializedAsync используем OnAfterRenderAsync
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isRedirecting)
+        {
+            // Проверяем авторизацию только при первом рендере
+            await CheckAuthentication();
+            isInitialized = true;
+            StateHasChanged(); // Обновляем компонент
+        }
+    }
+
+    private async Task CheckAuthentication()
+    {
+        if (isRedirecting) return;
+
+        try
+        {
+            var isAuthenticated = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "isAuthenticated");
+            if (isAuthenticated == "true")
+            {
+                await CheckUserRole();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking authentication: {ex.Message}");
+        }
+    }
+
+    private async Task CheckUserRole()
+    {
+        if (isRedirecting) return;
+
+        try
+        {
+            var userRole = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userRole");
+
+            if (!string.IsNullOrEmpty(userRole))
+            {
+                isRedirecting = true;
+                NavigateToRolePage(userRole);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking user role: {ex.Message}");
+        }
+    }
+
+    private async Task HandleAuth()
+    {
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Заполните все поля");
+            return;
+        }
+
+        if (!isLoginMode && password != confirmPassword)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Пароли не совпадают");
+            return;
+        }
+
+        bool authSuccess = false;
+        string userRole = "";
+
+        if (isLoginMode)
+        {
+            var result = await AuthService.Login(email, password);
+            if (result.Success)
+            {
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userEmail", AuthService.CurrentUser.Email);
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userRole", AuthService.CurrentUser.Role);
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userName", AuthService.CurrentUser.Name);
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "isAuthenticated", "true");
+
+                authSuccess = true;
+                userRole = AuthService.CurrentUser.Role;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", result.ErrorMessage);
+                return;
+            }
+        }
+        else
+        {
+            var result = await AuthService.Register(email, password, name);
+            if (result.Success)
+            {
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userEmail", AuthService.CurrentUser.Email);
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userRole", AuthService.CurrentUser.Role);
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userName", AuthService.CurrentUser.Name);
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "isAuthenticated", "true");
+
+                await JSRuntime.InvokeVoidAsync("alert", "Регистрация успешна!");
+
+                authSuccess = true;
+                userRole = AuthService.CurrentUser.Role;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", result.ErrorMessage);
+                return;
+            }
+        }
+
+        if (authSuccess)
+        {
+            isRedirecting = true;
+            NavigateToRolePage(userRole);
+        }
+    }
+
+    private void NavigateToRolePage(string role)
+    {
+        switch (role)
+        {
+            case "employee":
+                NavigationManager.NavigateTo("/tasks");
+                break;
+            case "administrator":
+                NavigationManager.NavigateTo("/admin");
+                break;
+            case "seller":
+                NavigationManager.NavigateTo("/sellerHome");
+                break;
+            default:
+                NavigationManager.NavigateTo("/");
+                break;
+        }
+    }
+
+    private void ToggleMode()
+    {
+        isLoginMode = !isLoginMode;
+        email = string.Empty;
+        password = string.Empty;
+        confirmPassword = string.Empty;
+        name = string.Empty;
+    }
+
+    private void ShowForgotPassword()
+    {
+        Console.WriteLine("Восстановление пароля");
+    }
+}

@@ -1,0 +1,426 @@
+﻿@page "/orders"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using AutomathetionService.Services
+@inject AuthService AuthService
+@inject OrderService OrderService
+@rendermode InteractiveServer
+<link href="css/orders.css?v=@(DateTime.Now.Ticks)" rel="stylesheet" />
+
+<!-- Верхняя панель навигации -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-brand">REIGN</div>
+        <ul class="nav-menu" style="margin-left: auto;">
+            <li><a href="/sellerHome" class="nav-link">Аналитика</a></li>
+            <li><a href="/products" class="nav-link">Товары</a></li>
+            <li><a href="/orders" class="nav-link active">Заказы</a></li>
+            <li><a href="/taskSeller" class="nav-link">Задачи</a></li>
+            <li><a href="#" class="nav-link" @onclick="Logout">Выйти</a></li>
+        </ul>
+    </div>
+</nav>
+
+@if (isInitialized)
+{
+    <div class="orders-container">
+        <div class="orders-header">
+            <p>Список заказов</p>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="filters-section">
+            <div class="filter-group">
+                <label>Маркетплейс:</label>
+                <select @bind="selectedMarketplace" @bind:event="oninput" class="filter-select">
+                    <option value="">Все маркетплейсы</option>
+                    @foreach (var mp in availableMarketplaces)
+                    {
+                        <option value="@mp">@mp</option>
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Склад:</label>
+                <select @bind="selectedWarehouse" @bind:event="oninput" class="filter-select">
+                    <option value="">Все склады</option>
+                    @foreach (var wh in availableWarehouses)
+                    {
+                        <option value="@wh">@wh</option>
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Статус:</label>
+                <select @bind="selectedStatus" @bind:event="oninput" @onchange="OnFilterChanged" class="filter-select">
+                    <option value="">Все статусы</option>
+                    <option value="Оформлен">Оформлен</option>
+                    <option value="Принят в работу">Принят в работу</option>
+                    <option value="Доставлен">Доставлен</option>
+                    <option value="В сборке">В сборке</option>
+                    <option value="В доставке">В доставке</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="orders-grid">
+            @foreach (var order in filteredOrders)
+            {
+                <div class="order-card @GetOrderStatusClass(order)" @onclick="() => ShowOrderDetails(order)">
+                    <!-- Верхняя часть с клиентом и суммой -->
+                    <div class="order-header">
+                        <div class="order-customer">
+                            <span class="order-amount"> Сумма заказа: @order.Amount.ToString("N0") ₽</span>
+                        </div>
+                    </div>
+
+                    <!-- Информация о маркетплейсе и складе -->
+                    <div class="order-platforms">
+                        <div class="platform-row">
+                            <span class="platform-label">Маркетплейс:</span>
+                            <span class="platform-value">@order.Marketplace</span>
+                        </div>
+                        <div class="platform-row">
+                            <span class="platform-label">Склад:</span>
+                            <span class="platform-value">@order.Warehouse</span>
+                        </div>
+                    </div>
+
+                    <!-- Статус и дата заказа -->
+                    <div class="order-footer">
+                        <span class="order-status">@order.Status</span>
+                        <span class="order-date">Дата заказа: @order.OrderDate.ToString("dd.MM.yyyy")</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Модальное окно подробностей заказа -->
+    @if (showOrderDetails)
+    {
+        <div class="modal-overlay" @onclick="CloseOrderDetails">
+            <div class="modal-content" @onclick:stopPropagation>
+                <div class="modal-header">
+                    <h3>Детали заказа #@selectedOrder?.Id</h3>
+                    <button class="modal-close" @onclick="CloseOrderDetails">×</button>
+                </div>
+
+                <div class="order-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Клиент:</span>
+                        <span class="detail-value">@selectedOrder?.CustomerName</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Сумма:</span>
+                        <span class="detail-value">@selectedOrder?.Amount.ToString("N0") ₽</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Маркетплейс:</span>
+                        <span class="detail-value">@selectedOrder?.Marketplace</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Склад:</span>
+                        <span class="detail-value">@selectedOrder?.Warehouse</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Статус:</span>
+                        <span class="detail-value @GetOrderStatusClass(selectedOrder)">@selectedOrder?.Status</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Дата заказа:</span>
+                        <span class="detail-value">@selectedOrder?.OrderDate.ToString("dd.MM.yyyy HH:mm")</span>
+                    </div>
+                    @if (selectedOrder?.Status == "Отменен")
+                    {
+                        <div class="detail-row">
+                            <span class="detail-label">Причина отмены:</span>
+                            <span class="detail-value">@cancel</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="modal-actions">
+                    @if (selectedOrder?.Status == "Оформлен")
+                    {
+                        <button class="btn btn-cancel" @onclick="ShowCancelReasons">Отменить заказ</button>
+                    }
+                    <button class="btn btn-secondary" @onclick="CloseOrderDetails">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Модальное окно причин отмены -->
+    @if (showCancelReasons)
+    {
+        <div class="modal-overlay" @onclick="CloseCancelReasons">
+            <div class="modal-content cancel-reasons-modal" @onclick:stopPropagation>
+                <div class="modal-header">
+                    <h3>Причина отмены заказа #@selectedOrder?.Id</h3>
+                    <button class="modal-close" @onclick="CloseCancelReasons">×</button>
+                </div>
+
+                <div class="cancel-reasons">
+                    <div class="reason-group">
+                        <h4>Основные причины:</h4>
+                        @foreach (var reason in mainReasons)
+                        {
+                            <label class="reason-option">
+                                <input type="radio" name="cancelReason" value="@reason" @onchange="(e) => selectedReason = e.Value?.ToString()" />
+                                <span>@reason</span>
+                            </label>
+                        }
+                    </div>
+
+                    <div class="custom-reason">
+                        <label>Другая причина:</label>
+                        <textarea @bind="customReason" placeholder="Укажите свою причину..." class="reason-textarea"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-confirm" @onclick="ConfirmCancel" disabled="@(!CanConfirmCancel)">Подтвердить отмену</button>
+                    <button class="btn btn-secondary" @onclick="CloseCancelReasons">Назад</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Модальное окно успешной отмены -->
+    @if (showSuccessModal)
+    {
+        <div class="modal-overlay" @onclick="CloseSuccessModal">
+            <div class="modal-content success-modal" @onclick:stopPropagation>
+                <div class="modal-header">
+                    <h3>✅ Заказ отменен</h3>
+                    <button class="modal-close" @onclick="CloseSuccessModal">×</button>
+                </div>
+
+                <div class="success-message">
+                    <p>Заказ #@selectedOrder?.Id успешно отменен</p>
+                    <p class="success-reason">Причина: @GetCancelReasonText()</p>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-primary" @onclick="CloseSuccessModal">OK</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="orders-container">
+        <div class="orders-header">
+            <p>Загрузка...</p>
+        </div>
+    </div>
+}
+
+@code {
+    private string selectedMarketplace = "";
+    private string selectedWarehouse = "";
+    private string selectedStatus = "";
+    private List<Order> filteredOrders = new();
+    private List<string> availableMarketplaces = new();
+    private List<string> availableWarehouses = new();
+    private bool isInitialized = false;
+
+    // Модальные окна
+    private bool showOrderDetails = false;
+    private bool showCancelReasons = false;
+    private bool showSuccessModal = false;
+    private Order? selectedOrder = null;
+    private string selectedReason = "";
+    private string customReason = "";
+
+    // Причины отмены
+    private List<string> mainReasons = new()
+    {
+        "Закончился товар",
+        "Обнаружен брак",
+        "Товар снят с продажи",
+        "Доставка невозможна по указанному адресу",
+        "Товар утерян на складе"
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckAuthentication();
+            if (isInitialized)
+            {
+                UpdateAvailablePlatforms();
+                FilterOrders();
+            }
+        }
+    }
+
+    private async Task CheckAuthentication()
+    {
+        try
+        {
+            var isAuthenticated = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "isAuthenticated");
+            if (isAuthenticated != "true")
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+            isInitialized = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Authentication error: {ex.Message}");
+        }
+    }
+
+    private void UpdateAvailablePlatforms()
+    {
+        availableMarketplaces = OrderService.Orders
+            .Select(o => o.Marketplace)
+            .Where(m => !string.IsNullOrEmpty(m))
+            .Distinct()
+            .ToList();
+
+        availableWarehouses = OrderService.Orders
+            .Select(o => o.Warehouse)
+            .Where(w => !string.IsNullOrEmpty(w))
+            .Distinct()
+            .ToList();
+    }
+
+    private void FilterOrders()
+    {
+        var query = OrderService.Orders.AsQueryable();
+
+        if (!string.IsNullOrEmpty(selectedMarketplace))
+        {
+            query = query.Where(o => o.Marketplace == selectedMarketplace);
+        }
+
+        if (!string.IsNullOrEmpty(selectedWarehouse))
+        {
+            query = query.Where(o => o.Warehouse == selectedWarehouse);
+        }
+
+        if (!string.IsNullOrEmpty(selectedStatus))
+        {
+            query = query.Where(o => o.Status == selectedStatus);
+        }
+
+        filteredOrders = query.ToList();
+        StateHasChanged();
+    }
+
+    // Показать детали заказа
+    private void ShowOrderDetails(Order order)
+    {
+        selectedOrder = order;
+        showOrderDetails = true;
+        StateHasChanged();
+    }
+
+    private void CloseOrderDetails()
+    {
+        showOrderDetails = false;
+        selectedOrder = null;
+        StateHasChanged();
+    }
+
+    // Отмена заказа
+    private void ShowCancelReasons()
+    {
+        showCancelReasons = true;
+        showOrderDetails = false;
+        selectedReason = "";
+        customReason = "";
+        StateHasChanged();
+    }
+
+    private void CloseCancelReasons()
+    {
+        showCancelReasons = false;
+        showOrderDetails = true;
+        StateHasChanged();
+    }
+
+    private bool CanConfirmCancel => !string.IsNullOrEmpty(selectedReason) || !string.IsNullOrEmpty(customReason);
+    string cancel = "";
+    private void ConfirmCancel()
+    {
+        if (selectedOrder != null)
+        {
+            cancel = GetCancelReasonText();
+            // Обновляем статус заказа
+            selectedOrder.Status = "Отменен";
+            var cancelReason = GetCancelReasonText();
+            Console.WriteLine($"Заказ #{selectedOrder.Id} отменен. Причина: {cancelReason}");
+
+            // Показываем окно успеха
+            showCancelReasons = false;
+            showSuccessModal = true;
+
+            FilterOrders();
+            StateHasChanged();
+        }
+    }
+
+    private string GetCancelReasonText()
+    {
+        if (!string.IsNullOrEmpty(customReason))
+            return customReason;
+        return selectedReason ?? "Не указана";
+    }
+
+    private void CloseSuccessModal()
+    {
+        showSuccessModal = false;
+        selectedOrder = null;
+        selectedReason = "";
+        customReason = "";
+        StateHasChanged();
+    }
+
+    private string GetOrderStatusClass(Order order)
+    {
+        return order.Status switch
+        {
+            "Оформлен" => "status-new",
+            "Принят в работу" => "status-processing",
+            "Доставлен" => "status-ready",
+            "В сборке" => "status-shipped",
+            "В доставке" => "status-delivery",
+            "Отменен" => "status-cancelled",
+            _ => "status-new"
+        };
+    }
+    private void OnFilterChanged()
+    {
+        FilterOrders();
+        StateHasChanged();
+    }
+    private async Task Logout()
+    {
+        AuthService.Logout();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userEmail");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userRole");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userName");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "isAuthenticated");
+        NavigationManager.NavigateTo("/");
+    }
+
+    // Модель заказа
+    public class Order
+    {
+        public int Id { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string Marketplace { get; set; } = string.Empty;
+        public string Warehouse { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime OrderDate { get; set; }
+    }
+}

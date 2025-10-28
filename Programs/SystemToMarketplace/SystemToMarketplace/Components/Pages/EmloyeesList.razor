@@ -1,0 +1,299 @@
+﻿@page "/employees"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using AutomathetionService.Services
+@inject AuthService AuthService
+@rendermode InteractiveServer
+<link href="css/admin.css" rel="stylesheet" />
+
+<!-- Верхняя панель навигации -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-brand">REIGN - Админ</div>
+        <ul class="nav-menu" style="margin-left: auto;">
+            <li><a href="/admin" class="nav-link">Трудозатратность</a></li>
+            <li><a href="/tasksHistory" class="nav-link">История задач</a></li>
+            <li><a href="/employees" class="nav-link active">Сотрудники</a></li>
+            <li><a href="#" class="nav-link" @onclick="Logout">Выйти</a></li>
+        </ul>
+    </div>
+</nav>
+
+@if (isInitialized)
+{
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Управление сотрудниками</h1>
+            <button class="btn btn-primary" @onclick="ShowAddEmployeeModal">+ Добавить сотрудника</button>
+        </div>
+
+        <!-- Таблица сотрудников -->
+        <div class="employees-table">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Сотрудник</th>
+                            <th>Должность</th>
+                            <th>Email</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var employee in employees)
+                        {
+                            <tr>
+                                <td>@employee.Id</td>
+                                <td>
+                                    <div class="employee-info">
+                                        <div class="employee-name">@employee.Name</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="role-badge @GetRoleClass(employee.Role)">@GetRoleDisplayName(employee.Role)</span>
+                                </td>
+                                <td>@employee.Email</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm btn-edit" @onclick="() => ShowEditEmployeeModal(employee)">
+                                            Редактировать
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteEmployee(employee)">
+                                            Удалить
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (showEmployeeModal)
+    {
+        <div class="modal-overlay" @onclick="CloseEmployeeModal">
+            <div class="modal-content" @onclick:stopPropagation>
+                <div class="modal-header">
+                    <h3>@(editingEmployee == null ? "Добавить сотрудника" : "Редактировать сотрудника")</h3>
+                    <button class="modal-close" @onclick="CloseEmployeeModal">×</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Имя *</label>
+                        <input type="text" @bind="employeeName" class="form-input" placeholder="Введите имя сотрудника" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" @bind="employeeEmail" class="form-input" placeholder="Введите email" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Пароль @(editingEmployee == null ? "*" : "(оставьте пустым чтобы не менять)")</label>
+                        <input type="password" @bind="employeePassword" class="form-input" placeholder="Введите пароль" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Должность *</label>
+                        <select @bind="employeeRole" class="form-select">
+                            <option value="">Выберите должность</option>
+                            <option value="picker">Сборщик</option>
+                            <option value="sorter">Сортировщик</option>
+                            <option value="returner">Приёмщик возвратов</option>
+                        </select>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(employeeError))
+                    {
+                        <div class="error-message">@employeeError</div>
+                    }
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-primary" @onclick="SaveEmployee" disabled="@(!CanSaveEmployee)">
+                        @(editingEmployee == null ? "Добавить сотрудника" : "Сохранить изменения")
+                    </button>
+                    <button class="btn btn-secondary" @onclick="CloseEmployeeModal">Отмена</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Загрузка...</h1>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Employee> employees = new();
+    private bool showEmployeeModal = false;
+    private Employee? editingEmployee = null;
+    private string employeeName = "";
+    private string employeeEmail = "";
+    private string employeePassword = "";
+    private string employeeRole = "";
+    private string employeeError = "";
+    private bool isInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckAuthentication();
+        }
+    }
+
+    private async Task CheckAuthentication()
+    {
+        try
+        {
+            var userRole = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userRole");
+            if (userRole != "administrator")
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+
+            // Загружаем сотрудников после успешной аутентификации
+            LoadEmployees();
+
+            isInitialized = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Authentication error: {ex.Message}");
+        }
+    }
+
+    private void LoadEmployees()
+    {
+        employees = new List<Employee>
+        {
+            new Employee { Id = 1, Name = "Иван Петров", Email = "ivan@reign.ru", Role = "picker" },
+            new Employee { Id = 2, Name = "Мария Сидорова", Email = "maria@reign.ru", Role = "sorter" },
+            new Employee { Id = 3, Name = "Алексей Козлов", Email = "alex@reign.ru", Role = "returner" },
+            new Employee { Id = 4, Name = "Елена Новикова", Email = "elena@reign.ru", Role = "picker" },
+            new Employee { Id = 5, Name = "Дмитрий Волков", Email = "dmitry@reign.ru", Role = "sorter" }
+        };
+    }
+
+    private void ShowAddEmployeeModal()
+    {
+        editingEmployee = null;
+        employeeName = "";
+        employeeEmail = "";
+        employeePassword = "";
+        employeeRole = "";
+        employeeError = "";
+        showEmployeeModal = true;
+        StateHasChanged();
+    }
+
+    private void ShowEditEmployeeModal(Employee employee)
+    {
+        editingEmployee = employee;
+        employeeName = employee.Name;
+        employeeEmail = employee.Email;
+        employeePassword = "";
+        employeeRole = employee.Role;
+        employeeError = "";
+        showEmployeeModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseEmployeeModal()
+    {
+        showEmployeeModal = false;
+        editingEmployee = null;
+        StateHasChanged();
+    }
+
+    private bool CanSaveEmployee => !string.IsNullOrEmpty(employeeName) &&
+                                  !string.IsNullOrEmpty(employeeEmail) &&
+                                  !string.IsNullOrEmpty(employeeRole) &&
+                                  (editingEmployee != null || !string.IsNullOrEmpty(employeePassword));
+
+    private void SaveEmployee()
+    {
+        if (editingEmployee == null)
+        {
+            // Добавление нового сотрудника
+            var newEmployee = new Employee
+                {
+                    Id = employees.Count > 0 ? employees.Max(e => e.Id) + 1 : 1,
+                    Name = employeeName,
+                    Email = employeeEmail,
+                    Role = employeeRole
+                };
+            employees.Add(newEmployee);
+        }
+        else
+        {
+            // Редактирование существующего сотрудника
+            editingEmployee.Name = employeeName;
+            editingEmployee.Email = employeeEmail;
+            editingEmployee.Role = employeeRole;
+        }
+
+        CloseEmployeeModal();
+        StateHasChanged();
+    }
+
+    private async Task DeleteEmployee(Employee employee)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Вы уверены, что хотите удалить сотрудника {employee.Name}?"))
+        {
+            employees.Remove(employee);
+            StateHasChanged();
+        }
+    }
+
+    private string GetRoleDisplayName(string role)
+    {
+        return role switch
+        {
+            "picker" => "Сборщик",
+            "sorter" => "Сортировщик",
+            "returner" => "Приёмщик возвратов",
+            _ => role
+        };
+    }
+
+    private string GetRoleClass(string role)
+    {
+        return role switch
+        {
+            "picker" => "role-picker",
+            "sorter" => "role-sorter",
+            "returner" => "role-returner",
+            _ => ""
+        };
+    }
+
+    private async Task Logout()
+    {
+        AuthService.Logout();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userEmail");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userRole");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userName");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "isAuthenticated");
+        NavigationManager.NavigateTo("/");
+    }
+
+    public class Employee
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+    }
+}

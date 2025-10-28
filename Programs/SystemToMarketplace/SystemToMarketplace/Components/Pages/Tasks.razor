@@ -1,0 +1,146 @@
+﻿@page "/tasks"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using AutomathetionService.Services
+@inject AuthService AuthService
+@inject TaskService TaskService
+@rendermode InteractiveServer
+<link href="css/task.css?v=@(DateTime.Now.Ticks)" rel="stylesheet" />
+
+<!-- Верхняя панель навигации -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-brand">REIGN</div>
+        <div class="nav-user-info">
+            <span class="user-name">@AuthService.CurrentUser.Name</span>
+            <span class="user-role">@AuthService.CurrentUser.Role</span>
+        </div>
+        <ul class="nav-menu" style="margin-left: auto;">
+            <li><a href="/taskList" class="nav-link active">Задачи</a></li>
+            <li><a href="#" class="nav-link" @onclick="Logout">Выйти</a></li>
+        </ul>
+    </div>
+</nav>
+
+@if (isInitialized)
+{
+    <div class="tasks-container">
+        <div class="tasks-header">
+            <p>Критические задачи</p>
+        </div>
+        <div class="tasks-grid">
+            @foreach (var task in TaskService.Tasks.Where(t => !t.IsCompleted && t.Priority == "high"))
+            {
+                <div class="task-card @(task.Priority)-priority" @onclick="() => ViewTaskDetails(task.Id)">
+                    <div class="task-content">
+                        <h3>@task.Title - осталось @task.TimeLeft</h3>
+                        <div class="task-meta">
+                            <span class="priority-badge @task.Priority">Приоритет - @GetPriorityText(task.Priority)</span>
+                            <span class="status-badge @GetStatusClass(task)">@GetStatusText(task)</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="tasks-container">
+        <div class="tasks-header">
+            <p>Загрузка...</p>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckAuthentication();
+        }
+    }
+
+    private async Task CheckAuthentication()
+    {
+        try
+        {
+            var isAuthenticated = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "isAuthenticated");
+            if (isAuthenticated != "true")
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+
+            var userRole = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userRole");
+            if (userRole == "administrator")
+            {
+                NavigationManager.NavigateTo("/home");
+            }
+            isInitialized = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Authentication error: {ex.Message}");
+        }
+    }
+
+    private void ViewTaskDetails(int taskId)
+    {
+        foreach (var task in TaskService.Tasks)
+        {
+            if (task.Id == taskId)
+            {
+                task.Status = "in-progress";
+            }
+        }
+        NavigationManager.NavigateTo($"/task/{taskId}/{1}");
+    }
+
+    private string GetPriorityText(string priority)
+    {
+        return priority switch
+        {
+            "high" => "высокий",
+            "medium" => "средний",
+            "low" => "низкий",
+            _ => "неизвестно"
+        };
+    }
+
+    private string GetStatusClass(TaskModel task)
+    {
+        return task.Status switch
+        {
+            "new" => "status-new",
+            "in-progress" => "status-in-progress",
+            "completed" => "status-completed",
+            _ => "status-new"
+        };
+    }
+
+    private string GetStatusText(TaskModel task)
+    {
+        return task.Status switch
+        {
+            "new" => "Ожидание",
+            "in-progress" => "В работе",
+            "completed" => "Завершена",
+            _ => "Новая"
+        };
+    }
+
+    private async Task Logout()
+    {
+        AuthService.Logout();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userEmail");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userRole");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userName");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "isAuthenticated");
+        NavigationManager.NavigateTo("/");
+    }
+}

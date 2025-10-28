@@ -1,0 +1,442 @@
+/* Стили для дашборда */
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: #f8fafc;
+    min-height: calc(100vh - 70px);
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.3s ease;
+}
+
+    .metric-card:hover {
+        transform: translateY(-2px);
+    }
+
+.metric-icon {
+    font-size: 2rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.metric-content {
+    flex: 1;
+}
+
+    .metric-content h3 {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+.metric-value {
+    color: #1e293b;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.metric-change {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+}
+
+    .metric-change.positive {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .metric-change.negative {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+.metric-risk {
+    font-size: 0.8rem;
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* Стили для CSS графика */
+.charts-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+    .charts-section h3 {
+        color: #1e293b;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+.css-chart-container {
+    height: 300px;
+    position: relative;
+}
+
+.chart-bars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 200px;
+    padding: 0 1rem;
+    border-bottom: 2px solid #e2e8f0;
+    position: relative;
+}
+
+.chart-bar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    margin: 0 0.5rem;
+    position: relative;
+}
+
+.chart-bar {
+    width: 30px;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: 10px;
+}
+
+    .chart-bar:hover {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+
+.chart-bar-value {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.chart-label {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.analytics-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+    .analytics-card h3 {
+        color: #64748b;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+.analytics-value {
+    color: #1e293b;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.progress-bar {
+    background: #e2e8f0;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .metric-card {
+        padding: 1rem;
+    }
+
+    .metric-value {
+        font-size: 1.25rem;
+    }
+
+    .chart-bars {
+        height: 150px;
+    }
+
+    .chart-bar {
+        width: 20px;
+    }
+
+    .chart-bar-value {
+        font-size: 0.6rem;
+    }
+}
+/* Стили для верхней панели навигации */
+.top-nav {
+    background: #334155;
+    padding: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: auto;
+    min-height: 70px;
+}
+
+.nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    height: 100%;
+    flex-wrap: wrap;
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 1rem 0;
+}
+
+/* Стили для меню навигации */
+.nav-menu {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+    .nav-menu li {
+        margin: 0;
+    }
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    display: block;
+    text-align: center;
+    white-space: nowrap;
+}
+
+    .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-link.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        font-weight: 600;
+    }
+
+    /* Специфичные стили для кнопки выхода */
+    .nav-link[onclick] {
+        background-color: rgba(220, 38, 38, 0.1);
+        border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+
+        .nav-link[onclick]:hover {
+            background-color: rgba(220, 38, 38, 0.2);
+        }
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 1024px) {
+    .nav-container {
+        padding: 0 15px;
+    }
+
+    .nav-brand {
+        font-size: 1.3rem;
+    }
+
+    .nav-link {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-nav {
+        height: auto;
+        padding: 0.5rem 0;
+    }
+
+    .nav-container {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .nav-brand {
+        font-size: 1.2rem;
+        padding: 0.3rem 0;
+        text-align: center;
+        width: 100%;
+    }
+
+    .nav-menu {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.3rem;
+    }
+
+        .nav-menu li {
+            flex: 1;
+            min-width: 0;
+        }
+
+    .nav-link {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.4rem;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.1;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-container {
+        padding: 0 10px;
+    }
+
+    .nav-brand {
+        font-size: 1.1rem;
+        letter-spacing: 0.3px;
+    }
+
+    .nav-menu {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 5px;
+    }
+
+        .nav-menu li {
+            flex: 0 0 auto;
+        }
+
+    .nav-link {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.35rem;
+        min-width: max-content;
+    }
+}
+
+@media (max-width: 360px) {
+    .nav-container {
+        padding: 0 8px;
+    }
+
+    .nav-brand {
+        font-size: 1rem;
+    }
+
+    .nav-link {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.3rem;
+    }
+
+    .nav-menu {
+        gap: 0.2rem;
+    }
+}
+
+/* Обеспечиваем хорошее отображение на очень высоких экранах */
+@media (min-width: 1440px) {
+    .nav-container {
+        max-width: 1400px;
+    }
+}
+
+/* Улучшаем доступность для людей с ограниченными возможностями */
+@media (prefers-reduced-motion: reduce) {
+    .nav-link {
+        transition: none;
+    }
+}

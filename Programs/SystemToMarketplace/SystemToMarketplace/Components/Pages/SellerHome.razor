@@ -1,0 +1,294 @@
+﻿@page "/sellerHome"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using AutomathetionService.Services
+@inject AuthService AuthService
+@rendermode InteractiveServer
+<link href="css/sellerHome.css" rel="stylesheet" />
+
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-brand">REIGN</div>
+        <ul class="nav-menu" style="margin-left: auto;">
+            <li><a href="/seller" class="nav-link active">Аналитика</a></li>
+            <li><a href="/products" class="nav-link">Товары</a></li>
+            <li><a href="/orders" class="nav-link">Заказы</a></li>
+            <li><a href="/taskSeller" class="nav-link">Задачи</a></li>
+            <li><a href="#" class="nav-link" @onclick="Logout">Выйти</a></li>
+        </ul>
+    </div>
+</nav>
+
+@if (isInitialized)
+{
+    <div class="dashboard-container">
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">💰</div>
+                <div class="metric-content">
+                    <h3>Чистая прибыль</h3>
+                    <p class="metric-value">@FormatCurrency(netProfit)</p>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">🧾</div>
+                <div class="metric-content">
+                    <h3>Средний чек</h3>
+                    <p class="metric-value">@FormatCurrency(averageCheck)</p>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">📈</div>
+                <div class="metric-content">
+                    <h3>Процент выручки</h3>
+                    <p class="metric-value">@revenuePercentage.ToString("F2")%</p>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">🏪</div>
+                <div class="metric-content">
+                    <h3>Комиссия маркетплейса</h3>
+                    <p class="metric-value">@FormatCurrency(marketplaceCommission)</p>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">🔄</div>
+                <div class="metric-content">
+                    <h3>Заказы</h3>
+                    <p class="metric-value">@ordersCount.ToString("N0")</p>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">📦</div>
+                <div class="metric-content">
+                    <h3>Выкупы</h3>
+                    <p class="metric-value">@buyoutsCount.ToString("N0")</p>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">⚠️</div>
+                <div class="metric-content">
+                    <h3>Финансовые риски</h3>
+                    <p class="metric-value">@FormatCurrency(financialRisks)</p>
+                    <span class="metric-risk">Потенциальный убыток</span>
+                </div>
+            </div>
+        </div>
+        <div class="charts-section">
+            <h3>Динамика продаж за последние 12 месяцев</h3>
+            <div class="css-chart-container">
+                <div class="chart-bars">
+                    @foreach (var month in salesData)
+                    {
+                        <div class="chart-bar-container">
+                            <div class="chart-bar" style="height: @(month.Height)%; background: @month.Color;">
+                                <div class="chart-bar-value">@FormatCurrencyShort(month.Value)</div>
+                            </div>
+                            <div class="chart-label">@month.Month</div>
+                        </div>
+                    }
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #3b82f6;"></div>
+                        <span>Выручка</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Дополнительная аналитика -->
+        <div class="analytics-grid">
+            <div class="analytics-card">
+                <h3>Упущенная прибыль</h3>
+                <p class="analytics-value">@FormatCurrency(lostProfit)</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: @(lostProfitPercentage)%"></div>
+                </div>
+            </div>
+
+            <div class="analytics-card">
+                <h3>Упущенная выручка</h3>
+                <p class="analytics-value">@FormatCurrency(lostRevenue)</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: @(lostRevenuePercentage)%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="dashboard-container">
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-content">
+                    <h3>Загрузка...</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string selectedPeriod = "30";
+    private bool isInitialized = false;
+
+    private decimal netProfit = 0;
+    private decimal averageCheck = 0;
+    private decimal revenuePercentage = 0;
+    private decimal expenses = 0;
+    private decimal marketplaceCommission = 0;
+    private int ordersCount = 0;
+    private int buyoutsCount = 0;
+    private decimal financialRisks = 0;
+
+    private decimal profitChange = 0;
+    private decimal checkChange = 0;
+    private decimal revenueChange = 0;
+    private decimal expensesChange = 0;
+    private decimal commissionChange = 0;
+    private decimal ordersChange = 0;
+    private decimal buyoutsChange = 0;
+
+    private decimal lostProfit = 0;
+    private decimal lostRevenue = 0;
+    private decimal lostProfitPercentage = 0;
+    private decimal lostRevenuePercentage = 0;
+
+    private List<ChartData> salesData = new();
+    private List<ChartData> profitData = new();
+
+    protected override void OnInitialized()
+    {
+        GenerateRandomData();
+        GenerateChartData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckAuthentication();
+        }
+    }
+
+    private async Task CheckAuthentication()
+    {
+        try
+        {
+            var isAuthenticated = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "isAuthenticated");
+            if (isAuthenticated != "true")
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+            isInitialized = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Authentication error: {ex.Message}");
+        }
+    }
+
+    private void GenerateRandomData()
+    {
+        var random = new Random();
+
+        // Генерация основных метрик
+        netProfit = random.Next(500000, 2000000);
+        averageCheck = random.Next(1000, 3000);
+        revenuePercentage = (decimal)random.NextDouble() * 100;
+        expenses = random.Next(300000, 1500000);
+        marketplaceCommission = random.Next(50000, 200000);
+        ordersCount = random.Next(5000, 50000);
+        buyoutsCount = random.Next(2000, 20000);
+        financialRisks = random.Next(500000, 1500000);
+
+        // Генерация изменений
+        profitChange = (decimal)(random.NextDouble() * 40 - 20);
+        checkChange = (decimal)(random.NextDouble() * 30 - 15);
+        revenueChange = (decimal)(random.NextDouble() * 25 - 12.5);
+        expensesChange = (decimal)(random.NextDouble() * 35 - 17.5);
+        commissionChange = (decimal)(random.NextDouble() * 20 - 10);
+        ordersChange = (decimal)(random.NextDouble() * 50 - 25);
+        buyoutsChange = (decimal)(random.NextDouble() * 45 - 22.5);
+
+        // Дополнительная аналитика
+        lostProfit = random.Next(200000, 1500000);
+        lostRevenue = random.Next(300000, 2000000);
+        lostProfitPercentage = (decimal)random.NextDouble() * 100;
+        lostRevenuePercentage = (decimal)random.NextDouble() * 100;
+    }
+
+    private void GenerateChartData()
+    {
+        var random = new Random();
+        var months = new[] { "Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек" };
+
+        salesData.Clear();
+        profitData.Clear();
+
+        foreach (var month in months)
+        {
+            var salesValue = random.Next(500000, 2000000);
+            var profitValue = (int)(salesValue * (decimal)(random.NextDouble() * 0.3 + 0.1));
+
+            salesData.Add(new ChartData
+                {
+                    Month = month,
+                    Value = salesValue,
+                    Height = (salesValue - 500000) / 1500000.0 * 100,
+                    Color = "#3b82f6"
+                });
+
+            profitData.Add(new ChartData
+                {
+                    Month = month,
+                    Value = profitValue,
+                    Height = (profitValue - 50000) / 800000.0 * 100,
+                    Color = "#10b981"
+                });
+        }
+    }
+
+    private string FormatCurrency(decimal value)
+    {
+        return value.ToString("N0") + " ₽";
+    }
+
+    private string FormatCurrencyShort(decimal value)
+    {
+        if (value >= 1000000)
+            return (value / 1000000).ToString("F1") + "M";
+        else if (value >= 1000)
+            return (value / 1000).ToString("F1") + "K";
+        else
+            return value.ToString("N0");
+    }
+
+    private async Task Logout()
+    {
+        AuthService.Logout();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userEmail");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userRole");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userName");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "isAuthenticated");
+        NavigationManager.NavigateTo("/");
+    }
+
+    private class ChartData
+    {
+        public string Month { get; set; } = string.Empty;
+        public decimal Value { get; set; }
+        public double Height { get; set; }
+        public string Color { get; set; } = string.Empty;
+    }
+}

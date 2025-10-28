@@ -1,0 +1,674 @@
+﻿/* Стили для верхней панели навигации */
+.top-nav {
+    background: #334155;
+    padding: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: auto;
+    min-height: 70px;
+}
+
+.nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    height: 100%;
+    flex-wrap: wrap;
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 1rem 0;
+}
+
+/* Стили для меню навигации */
+.nav-menu {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+    .nav-menu li {
+        margin: 0;
+    }
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    display: block;
+    text-align: center;
+    white-space: nowrap;
+}
+
+    .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-link.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        font-weight: 600;
+    }
+
+    /* Специфичные стили для кнопки выхода */
+    .nav-link[onclick] {
+        background-color: rgba(220, 38, 38, 0.1);
+        border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+
+        .nav-link[onclick]:hover {
+            background-color: rgba(220, 38, 38, 0.2);
+        }
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 1024px) {
+    .nav-container {
+        padding: 0 15px;
+    }
+
+    .nav-brand {
+        font-size: 1.3rem;
+    }
+
+    .nav-link {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-nav {
+        height: auto;
+        padding: 0.5rem 0;
+    }
+
+    .nav-container {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .nav-brand {
+        font-size: 1.2rem;
+        padding: 0.3rem 0;
+        text-align: center;
+        width: 100%;
+    }
+
+    .nav-menu {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.3rem;
+    }
+
+        .nav-menu li {
+            flex: 1;
+            min-width: 0;
+        }
+
+    .nav-link {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.4rem;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.1;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-container {
+        padding: 0 10px;
+    }
+
+    .nav-brand {
+        font-size: 1.1rem;
+        letter-spacing: 0.3px;
+    }
+
+    .nav-menu {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 5px;
+    }
+
+        .nav-menu li {
+            flex: 0 0 auto;
+        }
+
+    .nav-link {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.35rem;
+        min-width: max-content;
+    }
+}
+
+@media (max-width: 360px) {
+    .nav-container {
+        padding: 0 8px;
+    }
+
+    .nav-brand {
+        font-size: 1rem;
+    }
+
+    .nav-link {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.3rem;
+    }
+
+    .nav-menu {
+        gap: 0.2rem;
+    }
+}
+
+/* Обеспечиваем хорошее отображение на очень высоких экранах */
+@media (min-width: 1440px) {
+    .nav-container {
+        max-width: 1400px;
+    }
+}
+
+/* Улучшаем доступность для людей с ограниченными возможностями */
+@media (prefers-reduced-motion: reduce) {
+    .nav-link {
+        transition: none;
+    }
+}
+
+.user-name {
+    font-weight: 600;
+    color: white;
+    font-size: 0.95rem;
+}
+
+.user-role {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    text-transform: capitalize;
+}
+
+/* Стили для страницы задач */
+.tasks-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    background: #f8fafc;
+    min-height: calc(100vh - 70px);
+}
+
+.tasks-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+    .tasks-header h1 {
+        color: #334155;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+    }
+
+    .tasks-header p {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin: 0;
+        font-weight: 500;
+    }
+
+.tasks-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* Стили для карточки задачи */
+.task-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.2rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    width: 100%;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .task-card.high-priority {
+        border-left: 4px solid #dc2626;
+    }
+
+    .task-card.medium-priority {
+        border-left: 4px solid #d97706;
+    }
+
+    .task-card.low-priority {
+        border-left: 4px solid #059669;
+    }
+
+/* Верхняя часть карточки с временем и платформами */
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
+.task-time {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+    background: #f1f5f9;
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+
+/* Стили для бейджей маркетплейса и склада */
+.task-platforms {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: flex-end;
+}
+
+.platform-badge {
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+    .platform-badge.marketplace {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    }
+
+    .platform-badge.warehouse {
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: white;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    }
+
+/* Основное содержимое карточки */
+.task-content {
+    width: 100%;
+}
+
+    .task-content h3 {
+        color: #334155;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.8rem;
+        line-height: 1.4;
+    }
+
+/* Стили для мета-информации задачи */
+.task-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.8rem;
+}
+
+.priority-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: none;
+}
+
+    .priority-badge.high {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .priority-badge.medium {
+        background: linear-gradient(135deg, #ffa726, #ff9800);
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .priority-badge.low {
+        background: linear-gradient(135deg, #66bb6a, #4caf50);
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+/* Красивые стили для статуса задачи */
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    border: none;
+}
+
+    .status-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.6s ease-in-out;
+    }
+
+    .status-badge:hover::before {
+        left: 100%;
+    }
+
+.status-new {
+    background: linear-gradient(135deg, #42a5f5, #1976d2);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.status-in-progress {
+    background: linear-gradient(135deg, #ffb74d, #f57c00);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.status-completed {
+    background: linear-gradient(135deg, #81c784, #388e3c);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Иконки для статусов */
+.status-new::after {
+    content: '✨';
+    font-size: 0.9rem;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));
+}
+
+.status-in-progress::after {
+    content: '⚡';
+    font-size: 0.9rem;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));
+}
+
+.status-completed::after {
+    content: '✅';
+    font-size: 0.9rem;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));
+}
+
+/* Анимация пульсации для новых задач */
+.status-new {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(66, 165, 245, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(66, 165, 245, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(66, 165, 245, 0);
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .tasks-container {
+        padding: 1rem;
+    }
+
+    .tasks-header h1 {
+        font-size: 1.7rem;
+    }
+
+    .task-card {
+        padding: 1rem;
+    }
+
+    .task-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .task-platforms {
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+    }
+
+    .task-time {
+        align-self: flex-start;
+    }
+
+    .task-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
+
+    .priority-badge,
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    .nav-user-info {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .tasks-header h1 {
+        font-size: 1.4rem;
+    }
+
+    .tasks-header p {
+        font-size: 1rem;
+    }
+
+    .task-card {
+        padding: 0.8rem;
+    }
+
+    .task-content h3 {
+        font-size: 1rem;
+    }
+
+    .task-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .priority-badge,
+    .status-badge {
+        font-size: 0.7rem;
+        padding: 0.35rem 0.7rem;
+    }
+
+        .status-badge::after {
+            font-size: 0.8rem;
+        }
+
+    .platform-badge {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .task-time {
+        font-size: 0.75rem;
+    }
+
+    .nav-brand {
+        font-size: 1.3rem;
+    }
+}
+/* Стили для поиска */
+.search-container {
+    margin-bottom: 2rem;
+    max-width: 500px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px;
+    padding-right: 40px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    font-family: inherit;
+}
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .search-input::placeholder {
+        color: #9ca3af;
+    }
+
+.search-clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+    .search-clear:hover {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+.search-results-info {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6b7280;
+    grid-column: 1 / -1;
+}
+
+    .no-results p {
+        margin-bottom: 1rem;
+        font-size: 16px;
+    }
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease;
+}
+
+    .btn-secondary:hover {
+        background: #4b5563;
+    }
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .search-container {
+        margin-bottom: 1.5rem;
+        max-width: 100%;
+    }
+
+    .search-input {
+        padding: 10px 14px;
+        padding-right: 36px;
+        font-size: 14px;
+    }
+
+    .search-clear {
+        right: 6px;
+        font-size: 18px;
+    }
+}

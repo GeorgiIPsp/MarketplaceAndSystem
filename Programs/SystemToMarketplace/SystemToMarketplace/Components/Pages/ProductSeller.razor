@@ -1,0 +1,506 @@
+﻿@page "/products"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using AutomathetionService.Services
+@inject AuthService AuthService
+@inject ProductService ProductService
+@rendermode InteractiveServer
+<link href="css/products.css?v=@(DateTime.Now.Ticks)" rel="stylesheet" />
+
+<!-- Верхняя панель навигации -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-brand">REIGN</div>
+        <ul class="nav-menu" style="margin-left: auto;">
+            <li><a href="/sellerHome" class="nav-link">Аналитика</a></li>
+            <li><a href="/products" class="nav-link active">Товары</a></li>
+            <li><a href="/orders" class="nav-link">Заказы</a></li>
+            <li><a href="/taskSeller" class="nav-link">Задачи</a></li>
+            <li><a href="#" class="nav-link" @onclick="Logout">Выйти</a></li>
+        </ul>
+    </div>
+</nav>
+
+@if (isInitialized)
+{
+    <div class="products-container">
+        <div class="products-header">
+            <h1>Мои товары</h1>
+            <button class="btn btn-primary" @onclick="ShowAddProductModal">+ Добавить товар</button>
+        </div>
+
+        <div class="products-grid">
+            @foreach (var product in ProductService.Products)
+            {
+                <div class="product-card" @onclick="() => ShowEditProductModal(product)">
+                    <div class="product-image">
+                        <img src="@product.ImageUrl" alt="@product.Name" onerror="this.src='images/tovar.jpg'" />
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">@product.Name</h3>
+                        <p class="product-category">@GetCategoryDisplayName(product.Category)</p>
+                        <p class="product-price">@product.Price.ToString("N0") ₽</p>
+                        <p class="product-stock">В наличии: @product.Stock шт.</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления/редактирования товара -->
+    @if (showProductModal)
+    {
+        <div class="modal-overlay" @onclick="CloseProductModal">
+            <div class="modal-content product-modal" @onclick:stopPropagation>
+                <div class="modal-header">
+                    <h3>@(editingProduct == null ? "Добавить товар" : "Редактировать товар")</h3>
+                    <button class="modal-close" @onclick="CloseProductModal">×</button>
+                </div>
+
+                <div class="modal-body">
+                    @if (isUploading)
+                    {
+                        <div class="uploading-overlay">
+                            <div class="uploading-message">Загрузка изображения...</div>
+                        </div>
+                    }
+
+                    <div class="form-group">
+                        <label>Категория товара *</label>
+                        <select @bind="selectedCategory" class="form-select">
+                            <option value="">Выберите категорию</option>
+                            <option value="clothing">Одежда</option>
+                            <option value="electronics">Электроника</option>
+                            <option value="home">Товары для дома</option>
+                            <option value="sports">Спорт и отдых</option>
+                        </select>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(selectedCategory))
+                    {
+                        <div class="subcategory-section">
+                            <label>Подкатегория *</label>
+                            <div class="subcategory-options">
+                                @foreach (var subcategory in GetSubcategories(selectedCategory))
+                                {
+                                    <label class="checkbox-option">
+                                        <input type="radio"
+                                               name="subcategory"
+                                               value="@subcategory.Value"
+                                               checked="@(selectedSubcategory == subcategory.Value)"
+                                               @onchange="@((e) => selectedSubcategory = subcategory.Value)" />
+                                        <span>@subcategory.Text</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(selectedSubcategory))
+                    {
+                        <div class="category-fields">
+                            <h4>Характеристики товара</h4>
+
+                            <div class="form-group">
+                                <label>Название товара *</label>
+                                <input type="text" @bind="productName" class="form-input" placeholder="Введите название товара" />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Описание товара *</label>
+                                <textarea @bind="productDescription" class="form-textarea" placeholder="Опишите товар"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Цена *</label>
+                                <input type="number" @bind="productPrice" class="form-input" placeholder="0" min="0" />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Количество на складе *</label>
+                                <input type="number" @bind="productStock" class="form-input" placeholder="0" min="0" />
+                            </div>
+
+                            <!-- Поля для конкретных категорий -->
+                            @if (selectedCategory == "clothing")
+                            {
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Размер</label>
+                                        <input type="text" @bind="clothingSize" class="form-input" placeholder="S, M, L, XL" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Цвет</label>
+                                        <input type="text" @bind="clothingColor" class="form-input" placeholder="Красный, синий и т.д." />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Материал</label>
+                                        <input type="text" @bind="clothingMaterial" class="form-input" placeholder="Хлопок, шерсть и т.д." />
+                                    </div>
+                                </div>
+                            }
+                            else if (selectedCategory == "electronics")
+                            {
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Бренд</label>
+                                        <input type="text" @bind="electronicsBrand" class="form-input" placeholder="Samsung, Apple и т.д." />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Модель</label>
+                                        <input type="text" @bind="electronicsModel" class="form-input" placeholder="Модель устройства" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Гарантия</label>
+                                        <input type="text" @bind="electronicsWarranty" class="form-input" placeholder="12 месяцев" />
+                                    </div>
+                                </div>
+                            }
+                            else if (selectedCategory == "home")
+                            {
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Материал</label>
+                                        <input type="text" @bind="homeMaterial" class="form-input" placeholder="Дерево, металл и т.д." />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Размеры</label>
+                                        <input type="text" @bind="homeDimensions" class="form-input" placeholder="100x50x200 см" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Вес</label>
+                                        <input type="text" @bind="homeWeight" class="form-input" placeholder="5 кг" />
+                                    </div>
+                                </div>
+                            }
+                            else if (selectedCategory == "sports")
+                            {
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Вид спорта</label>
+                                        <input type="text" @bind="sportsType" class="form-input" placeholder="Футбол, бег и т.д." />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Уровень</label>
+                                        <input type="text" @bind="sportsLevel" class="form-input" placeholder="Начинающий, профи" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Возраст</label>
+                                        <input type="text" @bind="sportsAge" class="form-input" placeholder="Для взрослых, детей" />
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="form-group">
+                                <label>Фото товара</label>
+                                <div class="image-upload">
+                                    <InputFile id="fileInput"
+                                               accept="image/*"
+                                               OnChange="HandleImageUpload"
+                                               class="file-input" />
+                                    <div class="upload-area" @onclick="TriggerFileInput">
+                                        @if (!string.IsNullOrEmpty(productImageUrl) && productImageUrl != "images/tovar.jpg")
+                                        {
+                                            <img src="@productImageUrl" alt="Предпросмотр" class="image-preview" />
+                                        }
+                                        else
+                                        {
+                                            <div class="upload-placeholder">
+                                                <span>+</span>
+                                                <p>Нажмите для загрузки фото</p>
+                                            </div>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(uploadError))
+                                    {
+                                        <div class="upload-error">@uploadError</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-primary" @onclick="SaveProduct" disabled="@(!CanSaveProduct || isUploading)">
+                        @(editingProduct == null ? "Добавить товар" : "Сохранить изменения")
+                    </button>
+                    <button class="btn btn-secondary" @onclick="CloseProductModal" disabled="@isUploading">Отмена</button>
+                    @if (editingProduct != null)
+                    {
+                        <button class="btn btn-danger" @onclick="DeleteProduct" disabled="@isUploading">Удалить товар</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="products-container">
+        <div class="products-header">
+            <h1>Загрузка...</h1>
+        </div>
+    </div>
+}
+
+@code {
+    private bool showProductModal = false;
+    private Product? editingProduct = null;
+    private string selectedCategory = "";
+    private string selectedSubcategory = "";
+    private string productName = "";
+    private string productDescription = "";
+    private decimal productPrice = 0;
+    private int productStock = 0;
+    private string productImageUrl = "images/tovar.jpg";
+    private bool isUploading = false;
+    private string uploadError = "";
+    private bool isInitialized = false;
+
+    // Поля для категорий
+    private string clothingSize = "";
+    private string clothingColor = "";
+    private string clothingMaterial = "";
+    private string electronicsBrand = "";
+    private string electronicsModel = "";
+    private string electronicsWarranty = "";
+    private string homeMaterial = "";
+    private string homeDimensions = "";
+    private string homeWeight = "";
+    private string sportsType = "";
+    private string sportsLevel = "";
+    private string sportsAge = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckAuthentication();
+        }
+    }
+
+    private async Task CheckAuthentication()
+    {
+        try
+        {
+            var isAuthenticated = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "isAuthenticated");
+            if (isAuthenticated != "true")
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+            isInitialized = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Authentication error: {ex.Message}");
+        }
+    }
+
+    private void ShowAddProductModal()
+    {
+        editingProduct = null;
+        ResetForm();
+        showProductModal = true;
+        StateHasChanged();
+    }
+
+    private void ShowEditProductModal(Product product)
+    {
+        editingProduct = product;
+        selectedCategory = product.Category;
+        selectedSubcategory = product.Subcategory;
+        productName = product.Name;
+        productDescription = product.Description;
+        productPrice = product.Price;
+        productStock = product.Stock;
+        productImageUrl = product.ImageUrl;
+
+        FillCategoryFields(product);
+
+        showProductModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseProductModal()
+    {
+        showProductModal = false;
+        editingProduct = null;
+        ResetForm();
+        StateHasChanged();
+    }
+
+    private void ResetForm()
+    {
+        selectedCategory = "";
+        selectedSubcategory = "";
+        productName = "";
+        productDescription = "";
+        productPrice = 0;
+        productStock = 0;
+        productImageUrl = "images/tovar.jpg";
+        uploadError = "";
+
+        clothingSize = clothingColor = clothingMaterial = "";
+        electronicsBrand = electronicsModel = electronicsWarranty = "";
+        homeMaterial = homeDimensions = homeWeight = "";
+        sportsType = sportsLevel = sportsAge = "";
+    }
+
+    private void FillCategoryFields(Product product)
+    {
+        // Implementation for filling category fields
+    }
+
+    private List<(string Value, string Text)> GetSubcategories(string category)
+    {
+        return category switch
+        {
+            "clothing" => new List<(string, string)>
+            {
+                ("mens", "Мужская одежда"),
+                ("womens", "Женская одежда"),
+                ("kids", "Детская одежда")
+            },
+            "electronics" => new List<(string, string)>
+            {
+                ("smartphones", "Смартфоны"),
+                ("tablets", "Планшеты"),
+                ("laptops", "Ноутбуки"),
+                ("accessories", "Аксессуары")
+            },
+            "home" => new List<(string, string)>
+            {
+                ("furniture", "Мебель"),
+                ("kitchen", "Кухонные товары"),
+                ("decor", "Декор")
+            },
+            "sports" => new List<(string, string)>
+            {
+                ("fitness", "Фитнес"),
+                ("outdoor", "Отдых на природе"),
+                ("team", "Командные виды")
+            },
+            _ => new List<(string, string)>()
+        };
+    }
+
+    private string GetCategoryDisplayName(string category)
+    {
+        return category switch
+        {
+            "clothing" => "Одежда",
+            "electronics" => "Электроника",
+            "home" => "Товары для дома",
+            "sports" => "Спорт и отдых",
+            _ => category
+        };
+    }
+
+    private bool CanSaveProduct => !string.IsNullOrEmpty(selectedCategory) &&
+                                 !string.IsNullOrEmpty(selectedSubcategory) &&
+                                 !string.IsNullOrEmpty(productName) &&
+                                 !string.IsNullOrEmpty(productDescription) &&
+                                 productPrice > 0;
+
+    private void SaveProduct()
+    {
+        var product = new Product
+            {
+                Id = editingProduct?.Id ?? 0,
+                Name = productName,
+                Description = productDescription,
+                Category = selectedCategory,
+                Subcategory = selectedSubcategory,
+                Price = productPrice,
+                Stock = productStock,
+                ImageUrl = productImageUrl,
+                CreatedAt = editingProduct?.CreatedAt ?? DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
+        if (editingProduct == null)
+        {
+            ProductService.AddProduct(product);
+        }
+        else
+        {
+            ProductService.UpdateProduct(product);
+        }
+
+        CloseProductModal();
+    }
+
+    private void DeleteProduct()
+    {
+        if (editingProduct != null)
+        {
+            ProductService.DeleteProduct(editingProduct.Id);
+            CloseProductModal();
+        }
+    }
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        isUploading = true;
+        uploadError = "";
+        StateHasChanged();
+
+        await Task.Delay(1);
+
+        try
+        {
+            var file = e.File;
+
+            if (file.Size > 1 * 1024 * 1024)
+            {
+                uploadError = "Файл слишком большой. Максимальный размер: 1MB";
+                return;
+            }
+
+            if (!file.ContentType.StartsWith("image/"))
+            {
+                uploadError = "Пожалуйста, выберите файл изображения";
+                return;
+            }
+
+            using var stream = file.OpenReadStream(maxAllowedSize: 1 * 1024 * 1024);
+            using var memoryStream = new MemoryStream();
+
+            await stream.CopyToAsync(memoryStream);
+            var imageBytes = memoryStream.ToArray();
+
+            productImageUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
+            uploadError = "";
+        }
+        catch (Exception ex)
+        {
+            uploadError = $"Ошибка загрузки: {ex.Message}";
+            productImageUrl = "images/tovar.jpg";
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TriggerFileInput()
+    {
+        if (isUploading) return;
+
+        await JSRuntime.InvokeVoidAsync("triggerFileInput", "fileInput");
+    }
+
+    private async Task Logout()
+    {
+        AuthService.Logout();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userEmail");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userRole");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userName");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "isAuthenticated");
+        NavigationManager.NavigateTo("/");
+    }
+}

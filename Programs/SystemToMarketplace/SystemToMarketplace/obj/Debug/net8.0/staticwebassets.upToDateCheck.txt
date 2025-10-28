@@ -1,0 +1,16 @@
+wwwroot\app.css
+wwwroot\bootstrap\bootstrap.min.css
+wwwroot\bootstrap\bootstrap.min.css.map
+wwwroot\css\admin.css
+wwwroot\css\app.css
+wwwroot\css\bootstrap\bootstrap.min.css
+wwwroot\css\bootstrap\bootstrap.min.css.map
+wwwroot\css\general.css
+wwwroot\css\orders.css
+wwwroot\css\products.css
+wwwroot\css\sellerHome.css
+wwwroot\css\task.css
+wwwroot\css\taskDetail.css
+wwwroot\css\taskSeller.css
+wwwroot\favicon.png
+wwwroot\images\tovar.jpg

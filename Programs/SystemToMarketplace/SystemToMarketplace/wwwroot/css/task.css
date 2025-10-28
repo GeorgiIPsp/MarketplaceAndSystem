@@ -1,0 +1,610 @@
+﻿/* Базовые стили для верхней панели навигации */
+.top-nav {
+    background: #334155;
+    padding: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 1rem 0;
+    flex-shrink: 0;
+}
+
+/* Стили для меню навигации */
+.nav-menu {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex: 1;
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+    text-align: center;
+}
+
+    .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-link.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        font-weight: 600;
+    }
+
+    /* Стили для кнопки выхода */
+    .nav-link[onclick] {
+        background-color: rgba(220, 38, 38, 0.1);
+        border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+
+        .nav-link[onclick]:hover {
+            background-color: rgba(220, 38, 38, 0.2);
+        }
+
+/* Стили для информации о пользователе */
+.nav-user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.user-name {
+    font-weight: 600;
+    color: white;
+    font-size: 0.95rem;
+}
+
+.user-role {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    text-transform: capitalize;
+}
+
+/* Стили для страницы задач */
+.tasks-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    background: #f8fafc;
+    min-height: calc(100vh - 70px);
+}
+
+.tasks-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+    .tasks-header h1 {
+        color: #334155;
+        font-size: clamp(1.5rem, 4vw, 2rem);
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+    }
+
+    .tasks-header p {
+        color: #64748b;
+        font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+        margin: 0;
+        font-weight: 500;
+    }
+
+.tasks-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.task-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.2rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    width: 100%;
+    cursor: pointer;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+}
+
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Приоритеты задач */
+    .task-card.high-priority {
+        border-left: 4px solid #dc2626;
+    }
+
+    .task-card.medium-priority {
+        border-left: 4px solid #d97706;
+    }
+
+    .task-card.low-priority {
+        border-left: 4px solid #059669;
+    }
+
+.task-content {
+    width: 100%;
+}
+
+    .task-content h3 {
+        color: #334155;
+        font-size: clamp(1rem, 3vw, 1.1rem);
+        font-weight: 600;
+        margin-bottom: 0.8rem;
+        line-height: 1.4;
+    }
+
+/* Мета-информация задачи */
+.task-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.8rem;
+    flex-wrap: wrap;
+}
+
+/* Бейджи приоритета и статуса */
+.priority-badge,
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: none;
+    white-space: nowrap;
+}
+
+    /* Цвета приоритетов */
+    .priority-badge.high {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+    }
+
+    .priority-badge.medium {
+        background: linear-gradient(135deg, #ffa726, #ff9800);
+        color: white;
+    }
+
+    .priority-badge.low {
+        background: linear-gradient(135deg, #66bb6a, #4caf50);
+        color: white;
+    }
+
+/* Цвета статусов */
+.status-new {
+    background: linear-gradient(135deg, #42a5f5, #1976d2);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.status-in-progress {
+    background: linear-gradient(135deg, #ffb74d, #f57c00);
+    color: white;
+}
+
+.status-completed {
+    background: linear-gradient(135deg, #81c784, #388e3c);
+    color: white;
+}
+
+/* Анимация пульсации */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(66, 165, 245, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(66, 165, 245, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(66, 165, 245, 0);
+    }
+}
+
+/* ========== АДАПТИВНОСТЬ ========== */
+
+/* Планшеты (1024px и меньше) */
+@media (max-width: 1024px) {
+    .nav-container {
+        padding: 0 1rem;
+    }
+
+    .nav-brand {
+        font-size: 1.4rem;
+    }
+
+    .nav-link {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+    }
+
+    .tasks-container {
+        padding: 1.25rem;
+    }
+}
+
+/* Планшеты (768px и меньше) */
+@media (max-width: 768px) {
+    .top-nav {
+        min-height: 60px;
+        padding: 0.5rem 0;
+    }
+
+    .nav-container {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0 1rem;
+    }
+
+    .nav-brand {
+        font-size: 1.3rem;
+        padding: 0.25rem 0;
+        text-align: center;
+        width: 100%;
+    }
+
+    .nav-menu {
+        width: 100%;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .nav-user-info {
+        display: none;
+    }
+
+    .tasks-container {
+        padding: 1rem;
+    }
+
+    .task-card {
+        padding: 1rem;
+        min-height: 70px;
+    }
+
+    .task-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
+
+    .priority-badge,
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
+
+/* Мобильные устройства (640px и меньше) */
+@media (max-width: 640px) {
+    .nav-menu {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 0.5rem;
+        gap: 0.25rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+        .nav-menu::-webkit-scrollbar {
+            display: none;
+        }
+
+    .nav-link {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.6rem;
+        flex-shrink: 0;
+    }
+
+    .tasks-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .tasks-grid {
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+}
+
+/* Маленькие мобильные устройства (480px и меньше) */
+@media (max-width: 480px) {
+    .nav-container {
+        padding: 0 0.75rem;
+    }
+
+    .nav-brand {
+        font-size: 1.2rem;
+        letter-spacing: 0.5px;
+    }
+
+    .nav-menu {
+        gap: 0.15rem;
+    }
+
+    .nav-link {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.5rem;
+        flex-direction: column;
+        gap: 0.1rem;
+        min-width: 60px;
+    }
+
+        .nav-link span {
+            font-size: 0.7rem;
+        }
+
+    /* Иконки вместо текста для очень маленьких экранов */
+    @media (max-width: 360px) {
+        .nav-link span {
+            display: none;
+        }
+
+        .nav-link::before {
+            content: attr(data-icon);
+            font-size: 1rem;
+        }
+
+        .nav-link[href="/sellerHome"] {
+            data-icon: "📊";
+        }
+
+        .nav-link[href="/products"] {
+            data-icon: "📦";
+        }
+
+        .nav-link[href="/orders"] {
+            data-icon: "🛒";
+        }
+
+        .nav-link[href="/taskSeller"] {
+            data-icon: "✅";
+        }
+
+        .nav-link[onclick] {
+            data-icon: "🚪";
+        }
+    }
+
+    .tasks-container {
+        padding: 0.75rem;
+    }
+
+    .task-card {
+        padding: 0.8rem;
+        min-height: 65px;
+    }
+
+    .task-content h3 {
+        font-size: 0.95rem;
+        margin-bottom: 0.6rem;
+    }
+
+    .task-meta {
+        gap: 0.4rem;
+    }
+
+    .priority-badge,
+    .status-badge {
+        font-size: 0.7rem;
+        padding: 0.35rem 0.7rem;
+    }
+}
+
+/* Большие экраны (1440px и больше) */
+@media (min-width: 1440px) {
+    .nav-container {
+        max-width: 1400px;
+    }
+
+    .tasks-container {
+        max-width: 1200px;
+    }
+}
+
+/* Очень большие экраны (1920px и больше) */
+@media (min-width: 1920px) {
+    .nav-container {
+        max-width: 1600px;
+    }
+
+    .tasks-container {
+        max-width: 1400px;
+    }
+
+    .task-card {
+        padding: 1.5rem;
+        min-height: 100px;
+    }
+}
+
+/* Улучшения для доступности */
+@media (prefers-reduced-motion: reduce) {
+    .nav-link,
+    .task-card,
+    .priority-badge,
+    .status-badge {
+        transition: none;
+        animation: none;
+    }
+}
+
+
+/* Портретная ориентация */
+@media (max-height: 500px) and (orientation: portrait) {
+    .top-nav {
+        position: relative;
+    }
+
+    .tasks-container {
+        min-height: auto;
+        padding: 1rem 0.75rem;
+    }
+}
+
+/* Ландшафтная ориентация для мобильных */
+@media (max-height: 400px) and (orientation: landscape) {
+    .top-nav {
+        min-height: 50px;
+    }
+
+    .nav-brand {
+        font-size: 1.1rem;
+        padding: 0.5rem 0;
+    }
+
+    .tasks-container {
+        min-height: auto;
+        padding: 0.5rem;
+    }
+
+    .task-card {
+        padding: 0.6rem;
+        min-height: 50px;
+    }
+}
+/* Стили для поиска */
+.search-container {
+    margin-bottom: 2rem;
+    max-width: 500px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px;
+    padding-right: 40px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-input::placeholder {
+    color: #9ca3af;
+}
+
+.search-clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.search-clear:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.search-results-info {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6b7280;
+}
+
+.no-results p {
+    margin-bottom: 1rem;
+    font-size: 16px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .search-container {
+        margin-bottom: 1.5rem;
+    }
+    
+    .search-input {
+        padding: 10px 14px;
+        padding-right: 36px;
+        font-size: 14px;
+    }
+}

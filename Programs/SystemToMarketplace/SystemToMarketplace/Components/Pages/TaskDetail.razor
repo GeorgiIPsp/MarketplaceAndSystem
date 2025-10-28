@@ -1,0 +1,149 @@
+﻿@page "/task/{TaskId:int}/{Type:int}"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using AutomathetionService.Services
+@inject TaskService TaskService
+@inject AuthService AuthService
+@rendermode InteractiveServer
+<link href="css/taskDetail.css?v=@(DateTime.Now.Ticks)" rel="stylesheet" />
+
+<!-- Верхняя панель навигации -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <a href="/tasks" class="nav-brand">REIGN</a>
+    </div>
+</nav>
+
+@if (task != null)
+{
+    <div class="task-detail-container">
+        <div class="task-detail-card">
+            <div class="task-detail-header">
+                <h1>Reign</h1>
+                <h2>Задача в работе</h2>
+            </div>
+
+            <div class="task-detail-content">
+                <div class="task-section">
+                    <h3>Информация о товаре:</h3>
+                    <p><strong>Наименование:</strong> @task.ProductName</p>
+                    <p><strong>Артикул:</strong> @task.Article</p>
+                </div>
+
+                <div class="task-section">
+                    <h3>Детали заказа:</h3>
+                    <p><strong>Склад:</strong> @task.Warehouse</p>
+                    <p><strong>Количество:</strong> @task.Quantity шт (@task.Quantity одинаковых товара)</p>
+                    <p><strong>Заказ:</strong> @task.OrderNumber</p>
+                    <p><strong>Приоритет - @GetPriorityText(task.Priority)</strong></p>
+                    <p><strong>Стеллаж:</strong> @task.Rack</p>
+                    <p><strong>Полка:</strong> @task.Shelf</p>
+                </div>
+
+                <hr class="divider" />
+
+                <div class="task-section">
+                    <h3>Памятка:</h3>
+                    <div class="instructions">
+                        @foreach (var instruction in task.Instructions.Split('\n'))
+                        {
+                            <p>@instruction</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="task-section">
+                    <p><strong>Описание работы:</strong></p>
+                    <p>@task.WorkDescription</p>
+                </div>
+
+                <div class="task-actions">
+                    <button class="btn btn-cancel" @onclick="() => CancelTask(task.Id)">Отмена</button>
+                    <button class="btn btn-complete" @onclick="CompleteTask">Завершить сборку. Передача в доставку</button>
+                </div>
+
+                <div class="task-footer">
+                    <p>Принято в работу @DateTime.Now</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="error-container">
+        <p>Задача не найдена</p>
+        <button class="btn btn-back" @onclick="() => CancelTask(task.Id)">Вернуться к задачам</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int TaskId { get; set; }
+    [Parameter]
+    public int Type { get; set; }
+    private TaskModel task;
+
+    protected override void OnInitialized()
+    {
+        task = TaskService.GetTask(TaskId);
+    }
+
+    private void taskCriticList()
+    {
+        NavigationManager.NavigateTo("/tasks");
+    }
+
+    private void CancelTask(int taskId)
+    {
+        if (task.Id == taskId)
+        {
+            task.Status = "new";
+        }
+        if (Type == 2)
+        {
+            NavigationManager.NavigateTo("/taskSeller");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/taskList");
+        }
+    }
+
+    private void CompleteTask()
+    {
+        if (task != null)
+        {
+            TaskService.CompleteTask(task.Id);
+            if (Type == 2)
+            {
+                NavigationManager.NavigateTo("/taskSeller");
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/taskList");
+            }
+        }
+    }
+
+    private string GetPriorityText(string priority)
+    {
+        return priority switch
+        {
+            "high" => "высокий",
+            "medium" => "средний",
+            "low" => "низкий",
+            _ => "неизвестно"
+        };
+    }
+
+    private async Task Logout()
+    {
+        AuthService.Logout();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userEmail");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userRole");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userName");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "isAuthenticated");
+        NavigationManager.NavigateTo("/");
+    }
+}

@@ -1,0 +1,348 @@
+﻿@page "/tasksHistory"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using AutomathetionService.Services
+@inject AuthService AuthService
+@rendermode InteractiveServer
+<link href="css/admin.css" rel="stylesheet" />
+
+<!-- Верхняя панель навигации -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-brand">REIGN - Админ</div>
+        <ul class="nav-menu" style="margin-left: auto;">
+            <li><a href="/admin" class="nav-link">Трудозатратность</a></li>
+            <li><a href="/tasksHistory" class="nav-link active">История задач</a></li>
+            <li><a href="/employees" class="nav-link">Сотрудники</a></li>
+            <li><a href="#" class="nav-link" @onclick="Logout">Выйти</a></li>
+        </ul>
+    </div>
+</nav>
+
+@if (isInitialized)
+{
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>История задач</h1>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">@uniqueTasks</div>
+                <div class="stat-label">Всего задач</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@completedTasksCount</div>
+                <div class="stat-label">Выполнено</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@inProgressTasksCount</div>
+                <div class="stat-label">В работе</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@uniqueEmployees</div>
+                <div class="stat-label">Сотрудников</div>
+            </div>
+        </div>
+
+        <!-- Таблица истории задач -->
+        <div class="tasks-table">
+            <div class="table-header">
+                <h2>История изменений задач</h2>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID задачи</th>
+                            <th>Сотрудник</th>
+                            <th>Тип работы</th>
+                            <th>Описание</th>
+                            <th>Дата изменения</th>
+                            <th>Статус</th>
+                            <th>Комментарий</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var task in taskHistory)
+                        {
+                            <tr>
+                                <td>@task.TaskId</td>
+                                <td>
+                                    <div class="employee-info">
+                                        <div class="employee-name">@task.EmployeeName</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="work-type-badge @GetWorkTypeClass(task.WorkType)">@task.WorkType</span>
+                                </td>
+                                <td>@task.TaskDescription</td>
+                                <td>@task.StatusDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>
+                                    <span class="status-badge @GetStatusClass(task.Status)">@GetStatusDisplayName(task.Status)</span>
+                                </td>
+                                <td>@task.Comment</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Загрузка...</h1>
+        </div>
+    </div>
+}
+
+@code {
+    private List<TaskHistoryItem> taskHistory = new();
+    private int uniqueTasks = 0;
+    private int completedTasksCount = 0;
+    private int inProgressTasksCount = 0;
+    private int uniqueEmployees = 0;
+    private bool isInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckAuthentication();
+        }
+    }
+
+    private async Task CheckAuthentication()
+    {
+        try
+        {
+            var userRole = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userRole");
+            if (userRole != "administrator")
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+
+            // Загружаем данные после успешной аутентификации
+            LoadTaskHistory();
+            CalculateStatistics();
+
+            isInitialized = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Authentication error: {ex.Message}");
+        }
+    }
+
+    private void LoadTaskHistory()
+    {
+        var today = DateTime.Now;
+
+        taskHistory = new List<TaskHistoryItem>
+        {
+            // Задача 4562356 - Сборка заказа
+            new TaskHistoryItem
+            {
+                TaskId = "4562356",
+                EmployeeName = "Система",
+                WorkType = "Сборка заказа",
+                TaskDescription = "Комплектация заказа №4562356",
+                Status = "new",
+                StatusDate = today.AddHours(-4),
+                Comment = "Задача создана автоматически"
+            },
+            new TaskHistoryItem
+            {
+                TaskId = "4562356",
+                EmployeeName = "Иван Петров",
+                WorkType = "Сборка заказа",
+                TaskDescription = "Комплектация заказа №4562356",
+                Status = "in_progress",
+                StatusDate = today.AddHours(-3),
+                Comment = "Взята в работу"
+            },
+            new TaskHistoryItem
+            {
+                TaskId = "4562356",
+                EmployeeName = "Иван Петров",
+                WorkType = "Сборка заказа",
+                TaskDescription = "Комплектация заказа №4562356",
+                Status = "completed",
+                StatusDate = today.AddHours(-2),
+                Comment = "Заказ собран и упакован"
+            },
+
+            // Задача 4562357 - Сортировка
+            new TaskHistoryItem
+            {
+                TaskId = "4562357",
+                EmployeeName = "Система",
+                WorkType = "Сортировка",
+                TaskDescription = "Сортировка товаров в зоне А",
+                Status = "new",
+                StatusDate = today.AddHours(-5),
+                Comment = "Задача создана автоматически"
+            },
+            new TaskHistoryItem
+            {
+                TaskId = "4562357",
+                EmployeeName = "Мария Сидорова",
+                WorkType = "Сортировка",
+                TaskDescription = "Сортировка товаров в зоне А",
+                Status = "in_progress",
+                StatusDate = today.AddHours(-4),
+                Comment = "Начата сортировка"
+            },
+            new TaskHistoryItem
+            {
+                TaskId = "4562357",
+                EmployeeName = "Мария Сидорова",
+                WorkType = "Сортировка",
+                TaskDescription = "Сортировка товаров в зоне А",
+                Status = "completed",
+                StatusDate = today.AddHours(-2.5),
+                Comment = "Сортировка завершена"
+            },
+
+            // Задача 4562358 - Прием возвратов
+            new TaskHistoryItem
+            {
+                TaskId = "4562358",
+                EmployeeName = "Система",
+                WorkType = "Прием возвратов",
+                TaskDescription = "Обработка возврата №782",
+                Status = "new",
+                StatusDate = today.AddHours(-6),
+                Comment = "Поступил возврат от клиента"
+            },
+            new TaskHistoryItem
+            {
+                TaskId = "4562358",
+                EmployeeName = "Алексей Козлов",
+                WorkType = "Прием возвратов",
+                TaskDescription = "Обработка возврата №782",
+                Status = "in_progress",
+                StatusDate = today.AddHours(-5),
+                Comment = "Начата проверка товара"
+            },
+            new TaskHistoryItem
+            {
+                TaskId = "4562358",
+                EmployeeName = "Алексей Козлов",
+                WorkType = "Прием возвратов",
+                TaskDescription = "Обработка возврата №782",
+                Status = "completed",
+                StatusDate = today.AddHours(-3),
+                Comment = "Возврат обработан, товар принят"
+            },
+
+            // Задача 4562359 - Сборка заказа (еще в работе)
+            new TaskHistoryItem
+            {
+                TaskId = "4562359",
+                EmployeeName = "Система",
+                WorkType = "Сборка заказа",
+                TaskDescription = "Комплектация заказа №4562359",
+                Status = "new",
+                StatusDate = today.AddHours(-2),
+                Comment = "Задача создана автоматически"
+            },
+            new TaskHistoryItem
+            {
+                TaskId = "4562359",
+                EmployeeName = "Иван Петров",
+                WorkType = "Сборка заказа",
+                TaskDescription = "Комплектация заказа №4562359",
+                Status = "in_progress",
+                StatusDate = today.AddHours(-1),
+                Comment = "Взята в работу"
+            }
+        };
+
+        // Сортируем по дате (новые сверху)
+        taskHistory = taskHistory.OrderByDescending(t => t.StatusDate).ToList();
+    }
+
+    private void CalculateStatistics()
+    {
+        // Уникальные задачи
+        uniqueTasks = taskHistory.Select(t => t.TaskId).Distinct().Count();
+
+        // Завершенные задачи (последний статус = completed)
+        var lastStatuses = taskHistory
+            .GroupBy(t => t.TaskId)
+            .Select(g => g.OrderByDescending(t => t.StatusDate).First())
+            .ToList();
+
+        completedTasksCount = lastStatuses.Count(t => t.Status == "completed");
+        inProgressTasksCount = lastStatuses.Count(t => t.Status == "in_progress");
+
+        // Уникальные сотрудники (исключая "Система")
+        uniqueEmployees = taskHistory
+            .Where(t => t.EmployeeName != "Система")
+            .Select(t => t.EmployeeName)
+            .Distinct()
+            .Count();
+    }
+
+    private string GetWorkTypeClass(string workType)
+    {
+        return workType switch
+        {
+            "Сборка заказа" => "work-type-picking",
+            "Сортировка" => "work-type-sorting",
+            "Прием возвратов" => "work-type-returns",
+            _ => ""
+        };
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "new" => "status-new",
+            "in_progress" => "status-in-progress",
+            "completed" => "status-completed",
+            _ => ""
+        };
+    }
+
+    private string GetStatusDisplayName(string status)
+    {
+        return status switch
+        {
+            "new" => "Новая",
+            "in_progress" => "В работе",
+            "completed" => "Выполнено",
+            _ => status
+        };
+    }
+
+    private async Task Logout()
+    {
+        AuthService.Logout();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userEmail");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userRole");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userName");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "isAuthenticated");
+        NavigationManager.NavigateTo("/");
+    }
+
+    public class TaskHistoryItem
+    {
+        public string TaskId { get; set; } = string.Empty;
+        public string EmployeeName { get; set; } = string.Empty;
+        public string WorkType { get; set; } = string.Empty;
+        public string TaskDescription { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime StatusDate { get; set; }
+        public string Comment { get; set; } = string.Empty;
+    }
+}

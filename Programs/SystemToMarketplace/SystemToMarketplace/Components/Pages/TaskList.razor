@@ -1,0 +1,215 @@
+﻿@page "/taskList"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using AutomathetionService.Services
+@inject AuthService AuthService
+@inject TaskService TaskService
+@rendermode InteractiveServer
+<link href="css/task.css?v=@(DateTime.Now.Ticks)" rel="stylesheet" />
+
+<!-- Верхняя панель навигации -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <a href="/tasks" class="nav-brand" style="text-decoration: none; color: white; cursor: pointer;">REIGN</a>
+        <div class="nav-user-info">
+            <span class="user-name">@AuthService.CurrentUser.Name</span>
+            <span class="user-role">@AuthService.CurrentUser.Role</span>
+        </div>
+        <ul class="nav-menu" style="margin-left: auto;">
+            <li><a href="/taskList" class="nav-link active">Задачи</a></li>
+            <li><a href="#" class="nav-link" @onclick="Logout">Выйти</a></li>
+        </ul>
+    </div>
+</nav>
+
+@if (isInitialized)
+{
+    <div class="tasks-container">
+        <div class="tasks-header">
+            <p>Список задач</p>
+        </div>
+
+        <!-- Строка поиска -->
+        <div class="search-container">
+            <div class="search-input-wrapper">
+                <input type="text"
+                       class="search-input"
+                       placeholder="Поиск по названию, товару или складу..."
+                       value="@searchQuery"
+                       @oninput="OnSearchInput" />
+                @if (!string.IsNullOrEmpty(searchQuery))
+                {
+                    <button class="search-clear" @onclick="ClearSearch">×</button>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(searchQuery))
+            {
+                <div class="search-results-info">
+                    Найдено задач: @filteredTasks.Count
+                </div>
+            }
+        </div>
+
+        <div class="tasks-grid">
+            @foreach (var task in filteredTasks)
+            {
+                <div class="task-card @(task.Priority)-priority" @onclick="() => ViewTaskDetails(task.Id)">
+                    <div class="task-content">
+                        <h3>@task.Title - осталось @task.TimeLeft</h3>
+                        <div class="task-meta">
+                            <span class="priority-badge @task.Priority">Приоритет - @GetPriorityText(task.Priority)</span>
+                            <span class="status-badge @GetStatusClass(task)">@GetStatusText(task)</span>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (filteredTasks.Count == 0 && !string.IsNullOrEmpty(searchQuery))
+            {
+                <div class="no-results">
+                    <p>Задачи по запросу "@searchQuery" не найдены</p>
+                    <button class="btn btn-secondary" @onclick="ClearSearch">Очистить поиск</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="tasks-container">
+        <div class="tasks-header">
+            <p>Загрузка...</p>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isInitialized = false;
+    private string searchQuery = "";
+    private List<TaskModel> filteredTasks = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckAuthentication();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        FilterTasks();
+    }
+
+    private async Task CheckAuthentication()
+    {
+        try
+        {
+            var isAuthenticated = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "isAuthenticated");
+            if (isAuthenticated != "true")
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+
+            var userRole = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userRole");
+            if (userRole == "administrator")
+            {
+                NavigationManager.NavigateTo("/home");
+            }
+            isInitialized = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Authentication error: {ex.Message}");
+        }
+    }
+
+    private void FilterTasks()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filteredTasks = TaskService.Tasks.Where(t => !t.IsCompleted).ToList();
+        }
+        else
+        {
+            var query = searchQuery.ToLower();
+            filteredTasks = TaskService.Tasks
+                .Where(t => !t.IsCompleted &&
+                           (t.Title?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true ||
+                            t.ProductName?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true ||
+                            t.Priority?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true ||
+                            t.Warehouse?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true))
+                .ToList();
+        }
+        StateHasChanged();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+        FilterTasks();
+    }
+
+    private void ClearSearch()
+    {
+        searchQuery = "";
+        FilterTasks();
+    }
+
+    private void ViewTaskDetails(int taskId)
+    {
+        foreach (var task in TaskService.Tasks)
+        {
+            if (task.Id == taskId)
+            {
+                task.Status = "in-progress";
+            }
+        }
+        NavigationManager.NavigateTo($"/task/{taskId}/{1}");
+    }
+
+    private string GetPriorityText(string priority)
+    {
+        return priority switch
+        {
+            "high" => "высокий",
+            "medium" => "средний",
+            "low" => "низкий",
+            _ => "неизвестно"
+        };
+    }
+
+    private string GetStatusClass(TaskModel task)
+    {
+        return task.Status switch
+        {
+            "new" => "status-new",
+            "in-progress" => "status-in-progress",
+            "completed" => "status-completed",
+            _ => "status-new"
+        };
+    }
+
+    private string GetStatusText(TaskModel task)
+    {
+        return task.Status switch
+        {
+            "new" => "Ожидание",
+            "in-progress" => "В работе",
+            "completed" => "Завершена",
+            _ => "Новая"
+        };
+    }
+
+    private async Task Logout()
+    {
+        AuthService.Logout();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userEmail");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userRole");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userName");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "isAuthenticated");
+        NavigationManager.NavigateTo("/");
+    }
+}
