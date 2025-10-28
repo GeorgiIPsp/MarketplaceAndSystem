@@ -1,0 +1,466 @@
+﻿@page "/"
+@using Microsoft.Extensions.Logging
+@using yyy.Services
+@inject IProductService ProductService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<link href="css/general.css" rel="stylesheet" />
+
+<!-- Всплывающее окно входа/регистрации -->
+@if (showLoginModal)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h3>@(isLoginMode ? "Вход в аккаунт" : "Регистрация")</h3>
+                <button class="modal-close" @onclick="CloseModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" class="form-input" @bind="user.Email" />
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" class="form-input" @bind="user.Password" />
+                </div>
+                @if (!isLoginMode)
+                {
+                    <div class="form-group">
+                        <label>Подтвердите пароль</label>
+                        <input type="password" class="form-input" @bind="confirmPassword" />
+                    </div>
+                }
+                <button class="auth-btn" @onclick="HandleAuth">
+                    @(isLoginMode ? "Войти" : "Зарегистрироваться")
+                </button>
+
+                <div class="auth-links">
+                    @if (isLoginMode)
+                    {
+                        <a href="#" @onclick="ToggleMode" class="auth-link">Регистрация</a>
+                        <a href="#" @onclick="ShowForgotPassword" class="auth-link">Не могу войти</a>
+                    }
+                    else
+                    {
+                        <a href="#" @onclick="ToggleMode" class="auth-link">Уже есть аккаунт? Войти</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Верхняя панель навигации -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-brand">VALUED</div>
+        <div class="search-container" style="margin: auto">
+            <input type="text" class="search-input" placeholder="Поиск товаров..."
+                   @oninput="OnSearchInput" @bind="searchText" @onkeypress="OnSearchKeyPress" />
+            <button class="search-btn" @onclick="SearchProducts">🔍</button>
+            @if (!string.IsNullOrEmpty(searchText))
+            {
+                <button class="clear-search" @onclick="ClearSearch">✕</button>
+            }
+        </div>
+        <ul class="nav-menu" style="margin-left: auto;">
+            <li><a href="/" class="nav-link active">Главная</a></li>
+            @if (isAuthenticated)
+            {
+                <li><a href="/profile" class="nav-link">Профиль</a></li>
+            }
+            else
+            {
+                <li><a href="#" class="nav-link" @onclick="ShowLoginModal">Вход</a></li>
+            }
+            <li><a href="/cart" class="nav-link cart-link">Корзина (@GetCartItemsCount())</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    @if (products == null)
+    {
+        <div class="loading">Загрузка товаров...</div>
+    }
+    else if (!products.Any())
+    {
+        <div class="error">Товары не найдены</div>
+    }
+    else
+    {
+        <div class="products-grid">
+            @foreach (var product in products)
+            {
+                <div class="product-card" @onclick="() => OnProductClick(product.Id)">
+                    <img src="@product.ImageUrl" class="product-image" />
+                    <div class="product-price">@product.Price руб.</div>
+                    <div class="product-name">@product.Name</div>
+                    <div class="product-actions">
+                        @if (IsProductInCart(product.Id))
+                        {
+                            <button class="btn btn-in-cart" disabled>
+                                В корзине
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-cart"
+                                    
+                            @onclick:stopPropagation
+                                    @onclick="() => AddToCart(product.Id)">
+                                В корзину
+                            </button>
+                        }
+                        <button class="btn btn-buy"
+                                
+                                @onclick:stopPropagation
+                                @onclick="() => BuyNow(product.Id)">
+                            Купить
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+
+    private List<Product> products = new();
+    private List<Product> allProducts = new();
+    private string searchText = string.Empty;
+    UserService userService = new UserService();
+    private bool showLoginModal = false;
+    private bool isLoginMode = true;
+    private bool isAuthenticated = false;
+    private User user = new();
+    private string confirmPassword = string.Empty;
+    
+    User itemUser = new User { id = 1, Email = "georg@gmail.com", Password = "12345" };
+    public List<Cart> cartList = new List<Cart>();
+    
+
+    public List<CartItem> cartItems = new List<CartItem>();
+   
+
+    // Текущий авторизованный пользователь
+    private Cart currentUserCart = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            allProducts = await ProductService.GetProductsAsync();
+            products = allProducts;
+            
+
+            userService.userList.Add(itemUser);
+            
+            await LoadCartFromStorage();
+            await CheckAuthenticationStatus();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка загрузки товаров: {ex.Message}");
+        }
+    }
+
+    private async Task LoadCartFromStorage()
+    {
+        try
+        {
+            var savedCart = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userCart");
+            if (!string.IsNullOrEmpty(savedCart))
+            {
+                cartItems = System.Text.Json.JsonSerializer.Deserialize<List<CartItem>>(savedCart) ?? new List<CartItem>();
+            }
+            else
+            {
+                cartItems = new List<CartItem>();
+                
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка загрузки корзины: {ex.Message}");
+            cartItems = new List<CartItem>();
+            
+        }
+    }
+
+
+    private async Task CheckAuthenticationStatus()
+    {
+        try
+        {
+            var savedEmail = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userEmail");
+            if (!string.IsNullOrEmpty(savedEmail))
+            {
+                isAuthenticated = true;
+                userService.currentUser = userService.userList.FirstOrDefault(u => u.Email == savedEmail) ?? new User();
+                currentUserCart = cartList.FirstOrDefault(c => c.user_id == userService.currentUser.id) ?? new Cart();
+                StateHasChanged();
+            }
+        }
+        catch
+        {
+            isAuthenticated = false;
+        }
+    }
+
+    private void ShowLoginModal()
+    {
+        if (!isAuthenticated)
+        {
+            showLoginModal = true;
+            isLoginMode = true;
+            user = new User();
+            confirmPassword = string.Empty;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseModal()
+    {
+        showLoginModal = false;
+        user = new User();
+        confirmPassword = string.Empty;
+        StateHasChanged();
+    }
+
+    private void ToggleMode()
+    {
+        isLoginMode = !isLoginMode;
+        user = new User();
+        confirmPassword = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task HandleAuth()
+    {
+        if (string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(user.Password))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Заполните все поля");
+            return;
+        }
+
+        if (!isLoginMode && user.Password != confirmPassword)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Пароли не совпадают");
+            return;
+        }
+
+        if (isLoginMode)
+        {
+            // Логика входа
+            var existingUser = userService.userList.FirstOrDefault(u => u.Email == user.Email && u.Password == user.Password);
+            if (existingUser != null)
+            {
+                isAuthenticated = true;
+                userService.currentUser = existingUser;
+                currentUserCart = cartList.FirstOrDefault(c => c.user_id == userService.currentUser.id) ?? new Cart();
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userEmail", user.Email);
+                await JSRuntime.InvokeVoidAsync("alert", $"Вход выполнен: {user.Email}");
+                CloseModal();
+                StateHasChanged();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Неверный email или пароль");
+            }
+        }
+        else
+        {
+            // Логика регистрации
+            if (userService.userList.Any(u => u.Email == user.Email))
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Пользователь с таким email уже существует");
+                return;
+            }
+
+            int maxUserId = userService.userList.Count > 0 ? userService.userList.Max(u => u.id) + 1 : 1;
+            int maxCartId = cartList.Count > 0 ? cartList.Max(c => c.cart_id) + 1 : 1;
+
+            // Создаем корзину для нового пользователя
+            Cart newCart = new Cart { cart_id = maxCartId, user_id = maxUserId };
+            cartList.Add(newCart);
+
+            // Создаем пользователя
+            User newUser = new User
+            {
+                id = maxUserId,
+                Email = user.Email,
+                Password = user.Password
+            };
+            userService.userList.Add(newUser);
+
+            isAuthenticated = true;
+            userService.currentUser = newUser;
+            currentUserCart = newCart;
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userEmail", user.Email);
+            await JSRuntime.InvokeVoidAsync("alert", $"Регистрация выполнена: {user.Email}");
+            CloseModal();
+            StateHasChanged();
+        }
+    }
+
+    private async Task AddToCart(int productId)
+    {
+        if (!isAuthenticated)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Для добавления в корзину необходимо войти в систему");
+            ShowLoginModal();
+            return;
+        }
+
+        // Проверяем, есть ли уже товар в корзине
+        var existingItem = cartItems.FirstOrDefault(ci =>
+            ci.cart_id == currentUserCart.cart_id && ci.product_id == productId);
+
+        if (existingItem != null)
+        {
+            existingItem.quantity++;
+        }
+        else
+        {
+            var newCartItem = new CartItem
+            {
+                cart_id = currentUserCart.cart_id,
+                product_id = productId,
+                quantity = 1
+            };
+            cartItems.Add(newCartItem);
+        }
+
+
+        await SaveCartToStorage();
+
+        await JSRuntime.InvokeVoidAsync("alert", "Товар добавлен в корзину");
+        StateHasChanged();
+    }
+
+    private async Task SaveCartToStorage()
+    {
+        try
+        {
+            var cartJson = System.Text.Json.JsonSerializer.Serialize(cartItems);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userCart", cartJson);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка сохранения корзины: {ex.Message}");
+        }
+    }
+
+    private bool IsProductInCart(int productId)
+    {
+        if (!isAuthenticated) return false;
+
+        return cartItems.Any(ci =>
+            ci.cart_id == currentUserCart.cart_id && ci.product_id == productId);
+    }
+
+    private int GetCartItemsCount()
+    {
+        if (!isAuthenticated) return 0;
+
+        return cartItems
+            .Where(ci => ci.cart_id == currentUserCart.cart_id)
+            .Sum(ci => ci.quantity);
+    }
+
+    private async Task Logout()
+    {
+        isAuthenticated = false;
+        userService.currentUser = new User();
+        currentUserCart = new Cart();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userEmail");
+        StateHasChanged();
+    }
+
+    private void ShowForgotPassword()
+    {
+        Console.WriteLine("Восстановление пароля");
+    }
+
+    private void SearchProducts()
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            products = allProducts;
+        }
+        else
+        {
+            products = allProducts
+                .Where(p => p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        StateHasChanged();
+    }
+
+    private void ClearSearch()
+    {
+        searchText = string.Empty;
+        products = allProducts;
+        StateHasChanged();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchText = e.Value?.ToString() ?? string.Empty;
+        if (string.IsNullOrEmpty(searchText))
+        {
+            SearchProducts();
+        }
+    }
+
+    private void OnSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            SearchProducts();
+        }
+    }
+
+    private async Task BuyNow(int productId)
+    {
+        if (!isAuthenticated)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Для покупки необходимо войти в систему");
+            ShowLoginModal();
+            return;
+        }
+
+        // Добавляем товар в корзину
+        var product = allProducts.FirstOrDefault(p => p.Id == productId);
+        if (product != null)
+        {
+            // Создаем временную корзину с одним товаром
+            var tempCartItems = new List<CartItem>
+        {
+            new CartItem
+            {
+                cart_id = currentUserCart.cart_id,
+                product_id = productId,
+                quantity = 1
+            }
+        };
+
+            // Сохраняем временную корзину в localStorage
+            var cartJson = System.Text.Json.JsonSerializer.Serialize(tempCartItems);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "buyNowCart", cartJson);
+
+            // Переходим на страницу оформления
+            NavigationManager.NavigateTo("/checkout");
+        }
+    }
+
+    private async Task OnProductClick(int productId)
+    {
+        NavigationManager.NavigateTo($"/product/{productId}");
+    }
+}
