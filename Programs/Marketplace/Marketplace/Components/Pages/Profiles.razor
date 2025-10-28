@@ -1,0 +1,83 @@
+﻿@using yyy.Services
+@inject UserService UserService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+@page "/profile"
+@rendermode InteractiveServer
+<link href="css/profiles.css" rel="stylesheet" />
+
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-brand">VALUED</div>
+
+        <ul class="nav-menu" style="margin-left: auto;">
+            <li><a href="/" class="nav-link">Главная</a></li>
+            <li><a href="/profile" class="nav-link active">Профиль</a></li>
+            <li><a href="/cart" class="nav-link cart-link">Корзина</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="main-container">
+    <div class="navigation-panel">
+        <div class="nav-buttons">
+            <button class="nav-button @(currentPage == "orderhistory" ? "active" : "")"
+                    @onclick="NavigateToOrderHistory">
+                История заказов
+            </button>
+            <button class="nav-button @(currentPage == "orders" ? "active" : "")"
+                    @onclick="NavigateToOrders">
+                Заказы
+            </button>
+        </div>
+
+        <div class="logout-section">
+            <button class="logout-button" @onclick="Logout">
+                Выход
+            </button>
+        </div>
+    </div>
+
+    <!-- Контент будет меняться в зависимости от выбранной вкладки -->
+    <div class="content-area">
+        @if (currentPage == "orderhistory")
+        {
+            <h3>История заказов</h3>
+            <p>Здесь будет отображаться история ваших заказов</p>
+            <OrderHistoryComponent />
+        }
+        else if (currentPage == "orders")
+        {
+            <h3>Текущие заказы</h3>
+            <p>Здесь будут отображаться ваши текущие заказы</p>
+            <OrdersComponent />
+        }
+        else
+        {
+            <h3>Добро пожаловать в профиль!</h3>
+            <p>Выберите раздел для просмотра</p>
+        }
+    </div>
+</div>
+
+@code {
+    private string currentPage = "";
+
+    private void NavigateToOrderHistory()
+    {
+        currentPage = "orderhistory";
+        StateHasChanged();
+    }
+
+    private void NavigateToOrders()
+    {
+        currentPage = "orders";
+        StateHasChanged();
+    }
+
+    public async Task Logout()
+    {
+        await UserService.Logout(JSRuntime); // Используем инжектированный UserService
+        Navigation.NavigateTo("/", true);
+    }
+}
